@@ -1,38 +1,34 @@
+/* Vars */
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
 
+// Grid
 const cellSize = 20; // Tamanho da célula da grade
 const gridSizeX = Math.ceil(canvas.width / cellSize);
 const gridSizeY = Math.ceil(canvas.height / cellSize);
 
 const path = []; // Caminho único
 
-let dronePathIndex = 0; // Índice atual no caminho
 const DRONES_ENERGY = 1300;
+let dronePathIndex = 0; // Índice atual no caminho
 
-const drones = [];
-const enemies = [];
-let chargeStations = [{ x: 300, y: 50, radius: 20 }];
-const droneCoverage = 5; // Quantidade de quadrados monitorados por cada drone
 let isDrawing = false;
-let chargeTimer = 0;
-const chargeDuration = 300; // Tempo de recarga em quadros
-const newDroneDelay = 50; // Tempo para criar um novo drone em quadros
 let isMovingForward = true;
 
-const createDroneButton = document.getElementById('createDroneButton');
-createDroneButton.addEventListener('click', () => {
-    const totalDrones = drones.length;
-    const station = chargeStations[totalDrones % chargeStations.length];
-    createDrone(station.x, station.y);
+// Drone infos
+const chargeDuration = 300; // Tempo de recarga em quadros
+const droneCoverage = 5; // Quantidade de quadrados monitorados por cada drone
+const drones = [];
+const enemies = [];
+const newDroneDelay = 50; // Tempo para criar um novo drone em quadros
+let chargeStations = [{ x: 300, y: 50, radius: 20 }];
 
-    // Recalcular segmentos para todos os drones
-    for (const drone of drones) {
-        drone.segments = null;
-        drone.segmentIndex = undefined;
-    }
-});
+// Google Maps
+const addressInput = document.getElementById('addressInput');
+const mapDiv = document.getElementById('map');
+const searchButton = document.getElementById('searchButton');
 
+// TODO doing Enemy
 class Enemy {
     constructor(x, y, speed) {
         this.x = x;
@@ -53,6 +49,20 @@ class Enemy {
         }
     }
 }
+
+// Buttons
+const createDroneButton = document.getElementById('createDroneButton');
+createDroneButton.addEventListener('click', () => {
+    const totalDrones = drones.length;
+    const station = chargeStations[totalDrones % chargeStations.length];
+    createDrone(station.x, station.y);
+
+    // Recalcular segmentos para todos os drones
+    for (const drone of drones) {
+        drone.segments = null;
+        drone.segmentIndex = undefined;
+    }
+});
 
 canvas.addEventListener('click', event => {
     const rect = canvas.getBoundingClientRect();
@@ -78,7 +88,7 @@ canvas.addEventListener('click', event => {
 });
 
 document.getElementById('clearButton').addEventListener('click', () => {
-    path.length = 0; // Limpar o caminho
+    path.length = 0;
     drones.length = 1; // Manter apenas um drone
     drones[0] = {
         x: chargeStations[0].x,
@@ -87,8 +97,8 @@ document.getElementById('clearButton').addEventListener('click', () => {
         speed: 2,
         isCharging: false,
         chargeTimer: 0,
-    }; // Adicionei a propriedade 'speed'
-    enemies.length = 0; // Limpar a lista de inimigos
+    };
+    enemies.length = 0;
     isDrawing = false;
     chargeStations = [{ x: 300, y: 50, radius: 20 }];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -96,20 +106,30 @@ document.getElementById('clearButton').addEventListener('click', () => {
     updateEnergyInfo();
 });
 
-function createDrone(x, y) {
-    drones.push({ x, y, energy: DRONES_ENERGY, speed: 2 }); // Adicionei a propriedade 'speed'
+canvas.addEventListener('contextmenu', event => {
+    event.preventDefault();
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    chargeStations.push({ x: mouseX, y: mouseY, radius: 20 });
+    redrawCanvas();
+});
+
+/* Utils */
+function updateEnergyInfo() {
+    const energyInfo = document.getElementById('energyInfo');
+    energyInfo.innerHTML = '';
+    for (const drone of drones) {
+        energyInfo.innerHTML += drone.isCharging
+            ? `Drone: Recarregando... <br>`
+            : `Drone Energia: ${drone.energy}<br>`;
+    }
 }
 
-function createEnemies() {
-    for (let i = 0; i < path.length; i++) {
-        const point = path[i];
-        if (i % 10 === 0) {
-            // Criar inimigo a cada 10 pontos
-            const enemyX = point.x + (Math.random() - 0.5) * 40;
-            const enemyY = point.y + (Math.random() - 0.5) * 40;
-            enemies.push(new Enemy(enemyX, enemyY, 1));
-        }
-    }
+function createDrone(x, y) {
+    drones.push({ x, y, energy: DRONES_ENERGY, speed: 2 }); // Adicionei a propriedade 'speed'
 }
 
 function getRandomColor() {
@@ -121,40 +141,26 @@ function getRandomColor() {
     return color;
 }
 
-canvas.addEventListener('contextmenu', event => {
-    event.preventDefault(); // Impede o menu de contexto padrão
+// Inicializar o mapa do google maps
+function initMap() {
+    const map = new google.maps.Map(mapDiv, {
+        center: { lat: -34.397, lng: 150.644 },
+        zoom: 8,
+    });
+    searchButton.addEventListener('click', () => {
+        const geocoder = new google.maps.Geocoder();
+        const address = addressInput.value;
 
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    chargeStations.push({ x: mouseX, y: mouseY, radius: 20 });
-    redrawCanvas();
-});
-
-function updateEnemies() {
-    for (let i = 0; i < enemies.length; i++) {
-        const enemy = enemies[i];
-
-        if (enemy && enemy.isAlive) {
-            const drone = drones[i % drones.length];
-
-            if (drone && drone.energy > 0) {
-                enemy.moveTowards(drone.x, drone.y);
-
-                const distanceToDrone = calculateDistance(enemy.x, enemy.y, drone.x, drone.y);
-                if (distanceToDrone < 10) {
-                    drone.energy = 0; // Drone perde energia ao eliminar inimigo
-                    drone.x = chargeStations[0].x;
-                    drone.y = chargeStations[0].y;
-                }
+        geocoder.geocode({ address }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+                const location = results[0].geometry.location;
+                map.setCenter(location);
             }
-        }
-    }
-
-    requestAnimationFrame(updateEnemies);
+        });
+    });
 }
 
+/* Draw */
 function drawGrid() {
     ctx.beginPath();
     for (let x = 0; x <= canvas.width; x += cellSize) {
@@ -167,16 +173,6 @@ function drawGrid() {
     }
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'; // Grade mais transparente
     ctx.stroke();
-}
-
-function updateEnergyInfo() {
-    const energyInfo = document.getElementById('energyInfo');
-    energyInfo.innerHTML = '';
-    for (const drone of drones) {
-        energyInfo.innerHTML += drone.isCharging
-            ? `Drone: Recarregando... <br>`
-            : `Drone Energia: ${drone.energy}<br>`;
-    }
 }
 
 function redrawCanvas() {
@@ -225,8 +221,44 @@ function redrawCanvas() {
         }
     }
 
-    updateEnergyInfo(); // Atualizar informações de energia
+    updateEnergyInfo();
     requestAnimationFrame(redrawCanvas);
+}
+
+// TODO Doing enemies... (for test drones monitoring)
+function createEnemies() {
+    for (let i = 0; i < path.length; i++) {
+        const point = path[i];
+        if (i % 10 === 0) {
+            // Criar inimigo a cada 10 pontos
+            const enemyX = point.x + (Math.random() - 0.5) * 40;
+            const enemyY = point.y + (Math.random() - 0.5) * 40;
+            enemies.push(new Enemy(enemyX, enemyY, 1));
+        }
+    }
+}
+
+function updateEnemies() {
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+
+        if (enemy && enemy.isAlive) {
+            const drone = drones[i % drones.length];
+
+            if (drone && drone.energy > 0) {
+                enemy.moveTowards(drone.x, drone.y);
+
+                const distanceToDrone = calculateDistance(enemy.x, enemy.y, drone.x, drone.y);
+                if (distanceToDrone < 10) {
+                    // Se pegou enimigo no campo de visão excluir enemy
+                    drone.x = chargeStations[0].x;
+                    drone.y = chargeStations[0].y;
+                }
+            }
+        }
+    }
+
+    requestAnimationFrame(updateEnemies);
 }
 
 updateDrones();

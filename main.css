@@ -1,0 +1,19 @@
+#map {
+    height: 690px;
+    position: absolute;
+    width: 870px;
+    z-index: 1; /* Coloca o mapa atrás do canvas */
+}
+
+#myCanvas {
+    background: none;
+    border: 4px dashed gray;
+    margin-top: 60px;
+    position: absolute;
+    z-index: 2 !important;
+}
+
+.areaCanvas {
+   height: 680px;
+   width: 860px;
+}

@@ -1,20 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Seguir o Caminho Desenhado</title>
-  <style>
-    canvas {
-      border: 1px solid black;
-    }
-  </style>
+  <script src="env.js"></script>
+  <link rel="stylesheet" href="main.css">
+
+  <title>Drone AI</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_API_KEY&callback=initMap" async defer></script>
+
 </head>
 <body>
-  
-  <canvas id="myCanvas" width="800" height="600"></canvas>
+  <div class="areaCanvas">
+    <div id="map"></div>
+    <canvas id="myCanvas" width="800" height="600"></canvas>
+  </div>
+
   <br /><br />
-  
+  <input type="text" id="addressInput" placeholder="Digite um endereço">
+  <button id="searchButton">Buscar</button>
+  <br /><br />
   <button id="clearButton">Limpar</button>
   <button id="createDroneButton">Criar Drone</button>
+  <br /><br />
+  <span>Drones Info:</span>
   <div id="energyInfo"></div>
 
   <script src="patrol_AI.js"></script>
