@@ -1,5 +1,29 @@
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css");
+
+body {
+    background-image: url('./images/wallpaper.jpg') !important;
+}
+
+.titleArea {
+    color: white;
+    display: flex;
+    font-size: 50px;
+    font-weight: bold;
+    margin-left: 19rem;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.areaCanvas {
+    height: 680px;
+    margin-right: 40px;
+    width: 860px;
+ }
+
 #map {
+    background-color: antiquewhite;
     height: 690px;
+    margin-right: 40px;
     position: absolute;
     width: 870px;
     z-index: 1; /* Coloca o mapa atrás do canvas */
@@ -13,7 +37,31 @@
     z-index: 2 !important;
 }
 
-.areaCanvas {
-   height: 680px;
-   width: 860px;
+.containerMain {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    justify-items: center;
+}
+
+.containerInfo {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    margin-top: 60px;
+}
+
+.areaControlRoom {
+    margin-bottom: 40px;
+}
+
+
+.bi::before {
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.textExplanation {
+    width: 400px;
 }
