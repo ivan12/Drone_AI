@@ -178,12 +178,27 @@ function getLatLngFromPixel(x, y, map) {
     return latLng;
 }
 
+function handleMapLoadError() {
+    // Google Maps Fails
+    console.error('Google Maps error ao tentar carregar!');
+}
+
+function loadGoogleMaps() {
+    if (GOOGLE_API_KEY?.length > 0) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&callback=initMap`;
+        script.onerror = handleMapLoadError;
+        document.head.appendChild(script);
+    }
+}
+
 // Inicializar o mapa do google maps
 function initMap() {
     const map = new google.maps.Map(mapDiv, {
         center: { lat: -34.397, lng: 150.644 },
         zoom: 8,
     });
+
     searchButton.addEventListener('click', () => {
         const geocoder = new google.maps.Geocoder();
         const address = addressInput.value;
@@ -362,3 +377,5 @@ function updateEnemies() {
 updateDrones();
 updateEnemies();
 redrawCanvas();
+
+window.onload = loadGoogleMaps;
